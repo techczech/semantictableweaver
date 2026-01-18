@@ -1,0 +1,5 @@
+{
+  "name": "TabWeaver",
+  "description": "Create and explore semantic tables using Gemini AI. Convert flat CSVs, Markdown, or Images into rich, interactive, and semantic data structures with automated insights.",
+  "requestFramePermissions": []
+}
