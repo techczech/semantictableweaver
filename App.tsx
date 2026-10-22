@@ -5,10 +5,12 @@ import { SmartTable } from './components/SmartTable';
 import { DataVisualizer } from './components/DataVisualizer';
 import { AnalysisPanel } from './components/AnalysisPanel';
 import { processTableInput } from './services/geminiService';
+import { validateTableData } from './services/tableData';
 import { SemanticData, ProcessingState, SavedTable } from './types';
 import { RefreshCw, AlertTriangle, Table2, BarChart2, Save, Download, Share2 } from 'lucide-react';
 
 const App: React.FC = () => {
+  const [apiKey, setApiKey] = useState('');
   const [status, setStatus] = useState<ProcessingState>('idle');
   const [data, setData] = useState<SemanticData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -36,7 +38,7 @@ const App: React.FC = () => {
     setStatus('processing');
     setErrorMessage(null);
     try {
-      const result = await processTableInput(content, type, mimeType);
+      const result = await processTableInput(content, type, mimeType, apiKey);
       setData(result);
       setStatus('analyzed');
       setActiveTab('explorer');
@@ -47,7 +49,7 @@ const App: React.FC = () => {
   };
 
   const handleDirectImport = (importedData: SemanticData) => {
-      setData(importedData);
+      setData(validateTableData(importedData));
       setStatus('analyzed');
       setActiveTab('explorer');
   };
@@ -107,6 +109,14 @@ const App: React.FC = () => {
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <section aria-label="API settings" className="rounded-xl border border-slate-800 bg-slate-900 p-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <label htmlFor="gemini-api-key" className="text-sm font-medium text-slate-200">Gemini API key</label>
+            <input id="gemini-api-key" type="password" autoComplete="off" spellCheck={false} value={apiKey} onChange={event => setApiKey(event.target.value)} placeholder="Enter your own API key" className="flex-1 min-w-0 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm" />
+            <button type="button" onClick={() => setApiKey('')} className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800">Clear key</button>
+          </div>
+          <p className="text-xs text-slate-400 mt-2">Your key stays in this tab and is sent directly to Google for AI requests. Saved tables and JSON imports work without a key.</p>
+        </section>
         {status === 'idle' && (
           <>
             <div className="text-center max-w-3xl mx-auto mt-12">

@@ -1,20 +1,22 @@
 import { GoogleGenAI } from "@google/genai";
-import { SemanticData } from '../types';
+import type { SemanticData } from '../types';
+import { validateTableData } from './tableData.ts';
 
-const getAiClient = () => {
-  const apiKey = process.env.API_KEY;
+const getAiClient = (visitorKey?: string) => {
+  const apiKey = visitorKey?.trim();
   if (!apiKey) {
-    throw new Error("API Key not found in environment variables.");
+    throw new Error("Add your Gemini API key above to process a table. Saved tables and JSON imports do not need a key.");
   }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey, vertexai: false });
 };
 
 export const processTableInput = async (
   content: string,
   inputType: 'text' | 'image',
-  mimeType?: string
+  mimeType?: string,
+  visitorKey?: string
 ): Promise<SemanticData> => {
-  const ai = getAiClient();
+  const ai = getAiClient(visitorKey);
   
   // Using Gemini 2.5 Flash for speed and multimodal capabilities
   const modelId = 'gemini-2.5-flash';
@@ -108,15 +110,17 @@ export const processTableInput = async (
         });
     }
 
-    return {
+    return validateTableData({
       summary: parsed.summary || "No summary provided.",
       suggestedTitle: parsed.suggestedTitle || "Untitled Dataset",
       data: dataRows,
       columns: columns
-    };
+    });
 
   } catch (error) {
-    console.error("Gemini Processing Error:", error);
-    throw new Error("Failed to process the table data. Please ensure the input is clear and try again.");
+    const status = (error as {status?: number})?.status;
+    if (status === 401 || status === 403) throw new Error('Check your Gemini API key and its permissions, then try again.');
+    if (status === 429) throw new Error('Your Gemini API quota is exhausted. Wait and try again or check your API account.');
+    throw new Error('Gemini could not process the table. Check your key, connection and input, then try again.');
   }
 };

@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, FileText, Type, AlertCircle, Wand2, FileJson, Clock, Trash2, ArrowRight, Database } from 'lucide-react';
 import { SemanticData, SavedTable } from '../types';
+import { validateTableData } from '../services/tableData';
 
 interface InputSectionProps {
   onProcess: (content: string, type: 'text' | 'image', mimeType?: string) => void;
@@ -39,7 +40,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
                 if (event.target?.result) {
                     const parsed = JSON.parse(event.target.result as string);
                     if (parsed.columns && parsed.data) {
-                        onImport(parsed as SemanticData);
+                        onImport(validateTableData(parsed));
                     } else {
                         alert("Invalid TabWeaver JSON format.");
                     }
@@ -94,8 +95,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       processFile(e.dataTransfer.files[0]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [onProcess, onImport]);
 
   const formatDate = (timestamp: number) => {
     return new Intl.DateTimeFormat('en-US', {
